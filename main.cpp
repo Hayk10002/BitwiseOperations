@@ -6,7 +6,7 @@
 #include <chrono>
 #include <algorithm>
 
-int getRandomNumber(int min, int max) {
+int generateRandomNumber(int min, int max) {
     static std::random_device rd;
     static std::mt19937 mt(rd());
     std::uniform_int_distribution<int> dist(min, max);
@@ -55,43 +55,63 @@ void test_xor_swap() {
     assert(x == -3);
 }
 
-void benchmark_xor_swap_vs_std_swap() {
+void benchmark_xor_swap_vs_std_swap(int iteration_count) {
     const int size = 1000000;
     std::vector<int> vec1(size);
     std::vector<int> vec2(size);
 
-    std::ranges::generate(vec1, []() { return getRandomNumber(1, 100); });
-    std::ranges::generate(vec2, []() { return getRandomNumber(1, 100); });
+    volatile int dummy = 0; 
 
-    auto start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < size; ++i) 
-        xor_swap(vec1[i], vec2[i]);
-    auto duration_xor = std::chrono::high_resolution_clock::now() - start;
+    std::ranges::generate(vec1, []() { return generateRandomNumber(1, 100); });
+    std::ranges::generate(vec2, []() { return generateRandomNumber(1, 100); });
+    std::chrono::nanoseconds duration_xor{0}, duration_xor_unchecked{0}, duration_std{0};
 
-    start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < size; ++i) 
+    for (int i = 0; i < iteration_count; i++)
+    {
+        auto start = std::chrono::high_resolution_clock::now();
+        for (int i = 0; i < size; ++i) 
+            xor_swap(vec1[i], vec2[i]);
+        duration_xor += std::chrono::high_resolution_clock::now() - start;
+
+        dummy = vec1[generateRandomNumber(0, size - 1)] + vec2[generateRandomNumber(0, size - 1)]; 
+        
+        start = std::chrono::high_resolution_clock::now();
+        for (int i = 0; i < size; ++i) 
         xor_swap_unchecked(vec1[i], vec2[i]);
-    auto duration_xor_unchecked = std::chrono::high_resolution_clock::now() - start;
-
-    start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < size; ++i) 
+        duration_xor_unchecked += std::chrono::high_resolution_clock::now() - start;
+        
+        dummy = vec1[generateRandomNumber(0, size - 1)] + vec2[generateRandomNumber(0, size - 1)]; 
+        
+        start = std::chrono::high_resolution_clock::now();
+        for (int i = 0; i < size; ++i) 
         std::swap(vec1[i], vec2[i]);
-    auto duration_std = std::chrono::high_resolution_clock::now() - start;
-
+        duration_std += std::chrono::high_resolution_clock::now() - start;
+        
+        dummy = vec1[generateRandomNumber(0, size - 1)] + vec2[generateRandomNumber(0, size - 1)]; 
+    }
+    
     std::cout << "XOR           swap time: " << std::chrono::duration_cast<std::chrono::milliseconds>(duration_xor)           << '\n';
     std::cout << "XOR unchecked swap time: " << std::chrono::duration_cast<std::chrono::milliseconds>(duration_xor_unchecked) << '\n';
     std::cout << "std           swap time: " << std::chrono::duration_cast<std::chrono::milliseconds>(duration_std)           << '\n';
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+    int iteration_count = 10;
+    if (argc > 1) {
+        iteration_count = std::stoi(argv[1]);
+    }
+
     test_is_power_of_two();
     test_get_endianness();
     test_xor_swap_unchecked();
     test_xor_swap();
 
-    benchmark_xor_swap_vs_std_swap();
+    std::cout << "All tests passed!\n";
+    std::cout << "Running benchmarks with iteration count: " << iteration_count << "\n";
 
-    std::cout << "All tests and benchmarks passed!\n";
+    benchmark_xor_swap_vs_std_swap(iteration_count);
+
+    std::cout << "All benchmarks passed!\n";
     return 0;
 }

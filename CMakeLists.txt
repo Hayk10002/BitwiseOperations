@@ -12,4 +12,4 @@ enable_testing()
 add_executable(main main.cpp)
 target_link_libraries(main PRIVATE bit_op)
 
-add_test(NAME MainTest COMMAND main)
+add_test(NAME MainTest COMMAND main 1000)
