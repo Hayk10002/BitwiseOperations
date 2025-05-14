@@ -37,3 +37,18 @@ target_link_libraries(your_project PRIVATE bit_op)
 ```cpp
 #include <bit_op.hpp>
 ```
+
+## Benchmark results for xor swap checked and unchecked versions, comparing to `std::swap`
+
+If you compile and run the main.cpp with main.exe 1000, you will get this output
+```
+System endianness: LittleEndian
+All tests passed!
+Running benchmarks with iteration count: 1000
+XOR           swap time: 808ms
+XOR unchecked swap time: 391ms
+std           swap time: 370ms
+All benchmarks passed!
+```
+
+This implies that xor_swap even when implemented without equality check is slower than normal swap.
